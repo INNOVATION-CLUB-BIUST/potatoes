@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Club",
-  description: "Club website and member portal",
+  title: "BIUST Innovation Club",
+  description: "The central hub for academic resources, club events, and official notices.",
 };
 
 export default function RootLayout({
