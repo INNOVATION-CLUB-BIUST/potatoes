@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-
 import { useAuth } from "@/components/AuthContext"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,42 +10,62 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { db } from "@/lib/firebase"
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
 
-type Step = 1 | 2 | 3
-
 export default function ApplyPage() {
   const { user } = useAuth()
-
-  const [step, setStep] = React.useState<Step>(1)
   const [submitting, setSubmitting] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
 
-  const [fullName, setFullName] = React.useState("")
-  const [email, setEmail] = React.useState("")
-  const [why, setWhy] = React.useState("")
-  const [skills, setSkills] = React.useState("")
+  // Form State
+  const [formData, setFormData] = React.useState({
+    fullName: "",
+    email: "",
+    why: "",
+    skills: "",
+  })
 
-  async function onSubmit() {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
     setSubmitting(true)
     try {
       await addDoc(collection(db, "applications"), {
         uid: user?.uid ?? null,
-        fullName,
-        email,
-        why,
-        skills,
+        ...formData,
         status: "submitted",
         createdAt: serverTimestamp(),
       })
       setSubmitted(true)
+    } catch (error) {
+      console.error("Error submitting application:", error)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (submitted) {
+    return (
+      <div className="mx-auto w-full max-w-xl p-4 md:p-6">
+        <Card className="border-green-100 bg-green-50/30">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-2 text-center">
+              <h3 className="font-semibold text-green-900">Application Sent!</h3>
+              <p className="text-sm text-green-800/80">
+                Thanks for applying. An admin will review your details and update your role shortly.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -55,117 +74,63 @@ export default function ApplyPage() {
         <CardHeader>
           <CardTitle>Apply for membership</CardTitle>
           <CardDescription>
-            A short application to help us understand your interests.
+            Fill out the details below to join our community.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {submitted ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground">
-                Application submitted.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                If you created an account, an admin will review your application
-                and update your role.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              <FieldDescription>
-                Step {step} of 3
-              </FieldDescription>
-
-              {step === 1 && (
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="fullName">Full name</FieldLabel>
-                    <Input
-                      id="fullName"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </Field>
-                </FieldGroup>
-              )}
-
-              {step === 2 && (
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="why">Why do you want to join?</FieldLabel>
-                    <Textarea
-                      id="why"
-                      value={why}
-                      onChange={(e) => setWhy(e.target.value)}
-                      required
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="skills">Skills / interests</FieldLabel>
-                    <Textarea
-                      id="skills"
-                      value={skills}
-                      onChange={(e) => setSkills(e.target.value)}
-                      placeholder="e.g. web dev, design, robotics…"
-                    />
-                  </Field>
-                </FieldGroup>
-              )}
-
-              {step === 3 && (
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel>Review</FieldLabel>
-                    <div className="rounded-md border bg-muted/20 p-4 text-sm">
-                      <div className="font-medium">{fullName || "(name)"}</div>
-                      <div className="text-muted-foreground">{email || "(email)"}</div>
-                      <div className="mt-3 whitespace-pre-wrap">{why || "(why)"}</div>
-                      {skills && (
-                        <div className="mt-3 whitespace-pre-wrap text-muted-foreground">
-                          {skills}
-                        </div>
-                      )}
-                    </div>
-                  </Field>
-                </FieldGroup>
-              )}
-
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep((s) => (s === 1 ? 1 : ((s - 1) as Step)))}
-                  disabled={step === 1 || submitting}
-                >
-                  Back
-                </Button>
-
-                {step < 3 ? (
-                  <Button
-                    type="button"
-                    onClick={() => setStep((s) => ((s + 1) as Step))}
-                    disabled={submitting}
-                  >
-                    Next
-                  </Button>
-                ) : (
-                  <Button type="button" onClick={onSubmit} disabled={submitting}>
-                    {submitting ? "Submitting…" : "Submit"}
-                  </Button>
-                )}
+          <form onSubmit={onSubmit} className="grid gap-6">
+            <FieldGroup>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </Field>
               </div>
-            </div>
-          )}
+
+              <Field>
+                <FieldLabel htmlFor="why">Why do you want to join?</FieldLabel>
+                <Textarea
+                  id="why"
+                  placeholder="Tell us a bit about your goals..."
+                  value={formData.why}
+                  onChange={handleChange}
+                  required
+                  className="min-h-[100px]"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="skills">Skills & Interests</FieldLabel>
+                <Textarea
+                  id="skills"
+                  placeholder="e.g. web dev, design, robotics…"
+                  value={formData.skills}
+                  onChange={handleChange}
+                />
+              </Field>
+            </FieldGroup>
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit Application"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
