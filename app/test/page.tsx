@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowUpRight, Play, Github, Twitter, Linkedin, Mail } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { InfiniteSlider } from '@/components/motion-primitives/infinite-slider';
 import { TextScramble } from '@/components/motion-primitives/text-scramble';
+import { Footer } from '@/components/footer';
 
 
 
@@ -336,86 +338,91 @@ const CallToAction = () => (
     </div>
   </section>
 );
-
 const Hero = () => (
-  <section className="px-6 md:px-10 max-w-7xl mx-auto flex-1 flex flex-col justify-center pb-20 relative isolate">
-    {/* Background Image/Blob */}
-    <div className="absolute -bottom-30 left-10 w-185 h-180 -translate-x-1/2 -translate-y-1/4 blur-[10px] opacity-70 pointer-events-none">
+  // Updated max-width and padding for proper alignment with the rest of the site
+  <section className="px-6 md:px-10 max-w-7xl mx-auto flex-1 flex flex-col justify-center pb-10 relative isolate">
+    
+    {/* Background Image/Blob - Scaled dimensions and blur */}
+    <div className="absolute -bottom-15 left-5 w-92 h-90 -translate-x-1/2 -translate-y-1/4 blur-[5px] opacity-70 pointer-events-none">
       <img src="/image11.png" alt="" className="w-full h-full object-cover" />
     </div>
 
-    <div className="flex flex-col-reverse md:flex-row justify-between items-start gap-12 mt-12 relative z-10">
-      <div className="relative">
-       
+    <div className="flex flex-col-reverse md:flex-row justify-between items-start gap-6 mt-6 relative z-10">
+      <div className="relative flex flex-col items-start -ml-2 md:-ml-70">
+        
+        {/* Scaled TextScramble: text-2xl -> text-sm/base - Added -ml-2 to align text with heading */}
         <TextScramble
-      className="text-2xl font-extrabold font-pixel tracking-[0.3em] bg-black text-white mb-6 px-4 py-2 inline-block"
+          className="text-sm font-extrabold font-pixel tracking-[0.2em] bg-black text-white mb-3 px-2 py-1 inline-block"
           duration={1.2}
           characterSet=". "
         >
-          We craft digital solutions 
+          We build and craft digital solutions 
         </TextScramble>
-        <h1 className="text-6xl md:text-[10rem] lg:text-[12rem] font-extrabold leading-[0.85] font-pixel tracking-tighter md:mt-102">
+
+        {/* Scaled Heading: text-12rem -> text-6xl */}
+        <h1 className="text-2xl md:text-[5rem] lg:text-[6rem] font-bold leading-[0.85] font-pixel tracking-tighter md:mt-82">
           Biust<br />Innovation Club
         </h1>
 
-        {/* DESKTOP GROUP: Stacked vertically */}
-        <div className="hidden lg:flex absolute -bottom-40 left-[130%] flex-col gap-6 items-start">
-        <div className='flex justify-end'>  <MemberGrid /></div>
-          <div className="flex flex-row gap-4 whitespace-nowrap">
-            <button className="group flex items-center gap-3 bg-black text-white px-10 py-6 rounded-xs text-xl font-bold hover:scale-105 transition-all shadow-2xl">
+        {/* DESKTOP GROUP: Scaled positioning and buttons */}
+        <div className="hidden lg:flex absolute -bottom-20 left-[115%] flex-col gap-3 items-end">
+          <div className='flex justify-end scale-75 origin-right '> <MemberGrid /></div>
+          <div className="flex self-end justify-end origin-right flex-row gap-2 whitespace-nowrap">
+            <button className="group flex items-center gap-2 bg-black text-white px-5 py-3 rounded-xs text-sm font-bold hover:scale-105 transition-all shadow-xl">
               Join
-              <ArrowUpRight size={24} strokeWidth={3} />
+              <ArrowUpRight size={14} strokeWidth={3} />
             </button>
-            <button className="group flex items-center gap-3 border-4 border-black bg-white/50 backdrop-blur-sm px-8 py-5 rounded-xs text-xl font-bold hover:bg-black hover:text-white transition-all">
+            <button className="group flex items-center gap-2 border-2 border-black bg-white/50 backdrop-blur-sm px-4 py-2.5 rounded-xs text-sm font-bold hover:bg-black hover:text-white transition-all">
               Work with us
             </button>
           </div>
         </div>
 
-        {/* MOBILE GROUP */}
-        <div className="flex lg:hidden flex-col gap-6 mt-12">
-           <MemberGrid />
-           <div className="flex gap-3">
-             <button className="bg-black text-white px-6 py-4 rounded-xl font-bold text-lg">Join</button>
-             <button className="border-2 border-black px-6 py-4 rounded-xl font-bold text-lg">Work</button>
+        {/* MOBILE GROUP: Scaled spacing */}
+        <div className="flex lg:hidden flex-col gap-3 mt-6">
+           <div className="scale-75 origin-left"><MemberGrid /></div>
+           <div className="flex gap-2">
+             <button className="bg-black text-white px-3 py-2 rounded-lg font-bold text-sm">Join</button>
+             <button className="border-2 border-black px-3 py-2 rounded-lg font-bold text-sm">Work</button>
            </div>
         </div>
       </div>
 
-      {/* Hero Image Card */}
-      <div className="max-w-xs pb-4 md:-mt-16">
-        <div className="w-48 h-64 md:w-[580px] md:h-[480px] bg-gray-200 rounded-[0.5rem] mb-10 overflow-hidden shadow-2xl ring-1 ring-black/5 transition-all duration-700 hover:scale-[1.02]">
+      {/* Hero Image Card - Scaled W/H and typography */}
+      <div className="max-w-[160px] pb-2 md:-mt-8 md:translate-x-6 lg:translate-x-10">
+        <div className="w-24 h-32 md:w-[340px] md:h-[240px] bg-gray-200 rounded-[0.25rem] mb-5 overflow-hidden shadow-xl ring-1 ring-black/5 transition-all duration-700 hover:scale-[1.02]">
           <img src="/other.png" alt="Profile" className="object-cover w-full h-full hover:scale-110 transition-transform duration-1000" />
         </div>
-        <p className="text-sm md:text-base text-gray-600 leading-relaxed font-medium">
+
+        <p className="w-24 md:w-[340px] text-[10px] md:text-xs text-gray-600 leading-relaxed font-medium">
           Based in Botswana. Driving the future through collaboration and rapid prototyping.
         </p>
+    
       </div>
+    
     </div>
   </section>
 );
 
-
-const ProjectCard = ({ title, category }: { title: string; category: string }) => (
-  <div className="group cursor-pointer">
-    <div className="aspect-[4/3] bg-gray-100 rounded-3xl mb-4 overflow-hidden relative">
-      <img 
-        src="./image.png" 
-        alt={title} 
-        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700 ease-out" 
-      />
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-        <ArrowUpRight size={20} />
-      </div>
-    </div>
-    <h4 className="font-medium text-lg">{title}</h4>
-    <p className="text-gray-500 text-sm">{category}</p>
-  </div>
-);
-
 export default function Portfolio() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastSectionRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress: lastSectionScroll } = useScroll({
+    target: lastSectionRef,
+    container: containerRef,
+    offset: ["start end", "center center"]
+  });
+
+  const backgroundColor = useTransform(lastSectionScroll, [0, 0.1], ["#ffffff", "#000000"]);
+  const textColor = useTransform(lastSectionScroll, [0, 0.1], ["#000000", "#ffffff"]);
+
   return (
-    <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white">
+    <motion.div 
+      ref={containerRef}
+      className="h-screen overflow-y-auto overflow-x-hidden selection:bg-black selection:text-white"
+      style={{ backgroundColor, color: textColor }}
+    >
       
       {/* WRAPPER FOR FULL PAGE START */}
       <div className="min-h-screen flex flex-col">
@@ -500,48 +507,17 @@ export default function Portfolio() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="bg-black text-white px-6 md:px-10 py-20 mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-20">
-            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter">Let's Connect</h2>
-            <button className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-all duration-300">
-              <Mail size={28} />
-            </button>
-          </div>
-          
-          <hr className="border-gray-800 mb-12" />
-          
-          <div className="flex flex-col md:flex-row justify-between gap-16">
-            <div className="max-w-sm">
-              <div className="font-bold text-2xl mb-6">Duxy</div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Creating meaningful digital experiences through design and technology.
-              </p>
-              <div className="flex gap-6 mt-8">
-                <Github size={20} className="text-gray-400 hover:text-white cursor-pointer transition-colors" />
-                <Twitter size={20} className="text-gray-400 hover:text-white cursor-pointer transition-colors" />
-                <Linkedin size={20} className="text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-16 md:gap-32">
-              <div className="flex flex-col gap-4 text-sm text-gray-400">
-                <p className="text-white font-medium mb-2">Navigation</p>
-                <a href="#" className="hover:text-white transition-colors">Home</a>
-                <a href="#" className="hover:text-white transition-colors">Works</a>
-                <a href="#" className="hover:text-white transition-colors">About</a>
-              </div>
-              <div className="flex flex-col gap-4 text-sm text-gray-400">
-                <p className="text-white font-medium mb-2">Legal</p>
-                <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                <a href="#" className="hover:text-white transition-colors">Terms</a>
-                <a href="#" className="hover:text-white transition-colors">Cookies</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <div ref={lastSectionRef} className="min-h-screen flex flex-col justify-center items-center text-center px-6">
+        <h2 className="text-5xl md:text-8xl font-medium tracking-tighter mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">
+          The next chapter <br /> starts here.
+        </h2>
+        <p className="text-xl md:text-2xl opacity-60 max-w-2xl mb-12">
+          We're constantly pushing the boundaries of what's possible. 
+          New projects, new collaborations, and new ways to innovate.
+        </p>
+      </div>
+
+      <Footer />
+    </motion.div>
   );
 }

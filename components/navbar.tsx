@@ -1,6 +1,12 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Loader2 } from "lucide-react"
+import { 
+  Loader2, 
+  Mail, 
+  UserPlus, 
+  LayoutDashboard, 
+  LogIn 
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
@@ -29,30 +35,40 @@ export function Navbar() {
             </span>
           </Link>
           
-          {/* Status Badge: Using a lighter slate/emerald combo */}
-          <div className="hidden md:flex items-center gap-1.5 ml-4 py-1 px-2.5 bg-slate-50 border border-slate-200 rounded-full">
-            <Loader2 className="w-3 h-3 text-emerald-600 animate-spin" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Live Status</span>
-          </div>
+ 
         </div>
 
         <nav className="flex items-center gap-1">
-          {/* Navigation Links: Using slate-600 for softer contrast than pure black */}
-          <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all">
-            <Link href="/contact">Contact</Link>
+          {/* Navigation Links with Icons */}
+          <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all gap-2">
+            <Link href="/contact">
+              <Mail className="w-4 h-4" />
+              <span>Contact</span>
+            </Link>
           </Button>
-          <Button asChild variant="ghost" size="sm" className="hidden sm:flex text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all">
-            <Link href="/apply">Apply</Link>
+
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all gap-2">
+            <Link href="/apply">
+              <UserPlus className="w-4 h-4" />
+              <span>Apply</span>
+            </Link>
           </Button>
-          <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all">
-            <Link href="/portal">Portal</Link>
+
+          <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-primary hover:bg-slate-100 rounded-full px-4 font-medium transition-all gap-2">
+            <Link href="/portal">
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Portal</span>
+            </Link>
           </Button>
           
           <div className="w-px h-4 bg-slate-200 mx-2 hidden sm:block"></div>
           
-          {/* Login Button: Solid primary with a light shadow */}
-          <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-sm shadow-primary/10 transition-all hover:scale-[1.02] active:scale-95 font-bold">
-            <Link href="/login">Login</Link>
+          {/* Login Button with Icon */}
+          <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-sm shadow-primary/10 transition-all hover:scale-[1.02] active:scale-95 font-bold gap-2">
+            <Link href="/login">
+              <LogIn className="w-4 h-4" />
+              <span>Login</span>
+            </Link>
           </Button>
         </nav>
       </div>

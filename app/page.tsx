@@ -2,6 +2,7 @@
 import { motion, useScroll, useTransform, useMotionValueEvent } from "motion/react";
 import AboutSection from "@/components/about-section";
 import HeroSection from "@/components/hero-section";
+import { Footer } from "@/components/footer";
 
 import { useRef, useState, useEffect } from "react";
 import { useRevealer } from "@/hooks/useRevealer";
@@ -32,6 +33,7 @@ const TRANSITION_SECTION = {
 export default function Page() {
   const containerRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
+  const lastSectionRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<string | null>(null);
  
@@ -89,22 +91,33 @@ export default function Page() {
   const imgShadow = useTransform(heroScroll, [0.5, 1], ["0px 0px 0px rgba(0,0,0,0)", "0px 40px 80px rgba(0,0,0,0.3)"]);
   const imgScale = useTransform(heroScroll, [0, 1], [1, 1.25]);
 
-  // Transitions (text and background) - theme-aware
-  const isDark = mounted && resolvedTheme === 'dark';
-  
-  const heroBackgroundColor = useTransform(
-    heroScroll, 
-    [0.5, 1], 
-    isDark ? ["#050505", "#121212"] : ["#050505", "#fdfbf7"]
-  );
-  const backgroundColor = heroBackgroundColor;
+  const { scrollYProgress: lastSectionScroll } = useScroll({
+    target: lastSectionRef,
+    container: containerRef,
+    offset: ["start end", "center center"]
+  });
 
-  const heroTextColor = useTransform(
-    heroScroll, 
-    [0.5, 1], 
-    isDark ? ["#ffffff", "#f5f5f5"] : ["#ffffff", "#121212"]
+  const isDark = mounted && resolvedTheme === 'dark';
+  const midPointColor = isDark ? "#121212" : "#fdfbf7";
+  const midPointTextColor = isDark ? "#f5f5f5" : "#121212";
+
+  const backgroundColor = useTransform(
+    [heroScroll, lastSectionScroll],
+    ([h, l]: any[]) => {
+      if (l > 0.05) return "#000000";
+      if (h < 0.5) return "#050505";
+      return midPointColor;
+    }
   );
-  const textColor = heroTextColor;
+
+  const textColor = useTransform(
+    [heroScroll, lastSectionScroll],
+    ([h, l]: any[]) => {
+      if (l > 0.05) return "#ffffff";
+      if (h < 0.5) return "#ffffff";
+      return midPointTextColor;
+    }
+  );
 
   const textSecondary = useTransform(
     heroScroll, 
@@ -175,6 +188,36 @@ export default function Page() {
               <div id="about" className="min-h-screen flex flex-col justify-center">
                  <AboutSection variants={variants} transition={TRANSITION_SECTION} setActiveTab={setActiveTab} />
               </div>
+
+              <div ref={lastSectionRef} id="join" className="min-h-screen flex flex-col justify-center text-center space-y-12">
+                 <motion.h2 
+                    variants={variants.section}
+                    transition={TRANSITION_SECTION}
+                    className="text-5xl md:text-8xl font-bold tracking-tighter"
+                 >
+                    Ready to build?
+                 </motion.h2>
+                 <motion.p
+                    variants={variants.section}
+                    transition={{ ...TRANSITION_SECTION, delay: 0.1 }}
+                    className="text-xl md:text-2xl text-muted-foreground/80 max-w-2xl mx-auto"
+                 >
+                    Join the club and start your journey of innovation and technical growth. 
+                 </motion.p>
+                 <motion.div
+                    variants={variants.section}
+                    transition={{ ...TRANSITION_SECTION, delay: 0.2 }}
+                 >
+                    <button 
+                       className="px-12 py-6 rounded-3xl bg-white text-black text-xl font-bold hover:scale-110 transition-transform active:scale-95"
+                       onClick={() => handleNavigation('/apply')(null as any)}
+                    >
+                       Get Started
+                    </button>
+                 </motion.div>
+              </div>
+
+              <Footer />
             </motion.main>
 
 
