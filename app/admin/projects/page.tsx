@@ -2,6 +2,8 @@
 
 import * as React from "react"
 
+import { useAuth } from "@/components/AuthContext"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -31,41 +33,58 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { db } from "@/lib/firebase"
+import { batchAudit } from "@/lib/audit"
+import type { ProjectRow, ProjectStatus } from "@/lib/firestore-types"
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
   onSnapshot,
   serverTimestamp,
-  updateDoc,
+  writeBatch,
 } from "firebase/firestore"
 
-type ProjectRow = {
-  id: string
-  name: string
-  description?: string
-  membersCount: number
+const STATUS_LABELS: Record<ProjectStatus, string> = {
+  planned: "Planned",
+  active: "Active",
+  done: "Done",
+}
+
+const STATUS_VARIANT: Record<ProjectStatus, "default" | "secondary" | "outline"> = {
+  planned: "outline",
+  active: "default",
+  done: "secondary",
 }
 
 export default function AdminProjectsPage() {
+  const { user } = useAuth()
   const [projects, setProjects] = React.useState<ProjectRow[]>([])
   const [open, setOpen] = React.useState(false)
   const [editing, setEditing] = React.useState<ProjectRow | null>(null)
 
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
+  const [ownerUid, setOwnerUid] = React.useState("")
+  const [status, setStatus] = React.useState<ProjectStatus>("planned")
+  const [deadline, setDeadline] = React.useState("")
+  const [githubUrl, setGithubUrl] = React.useState("")
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
     return onSnapshot(collection(db, "projects"), (snap) => {
-      const next = snap.docs.map((d) => {
+      const next: ProjectRow[] = snap.docs.map((d) => {
         const data = d.data() as any
         return {
           id: d.id,
           name: data.name ?? "(untitled)",
           description: data.description,
-          membersCount: Array.isArray(data.members) ? data.members.length : 0,
+          members: Array.isArray(data.members) ? data.members : [],
+          ownerUid: data.ownerUid ?? null,
+          status: data.status ?? "planned",
+          deadline: data.deadline ?? null,
+          githubUrl: data.githubUrl,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         }
       })
       setProjects(next)
@@ -76,6 +95,10 @@ export default function AdminProjectsPage() {
     setEditing(null)
     setName("")
     setDescription("")
+    setOwnerUid(user?.uid ?? "")
+    setStatus("planned")
+    setDeadline("")
+    setGithubUrl("")
     setOpen(true)
   }
 
@@ -83,41 +106,93 @@ export default function AdminProjectsPage() {
     setEditing(p)
     setName(p.name)
     setDescription(p.description ?? "")
+    setOwnerUid(p.ownerUid ?? "")
+    setStatus(p.status ?? "planned")
+    setDeadline(
+      p.deadline
+        ? new Date((p.deadline as any).toDate()).toISOString().slice(0, 10)
+        : ""
+    )
+    setGithubUrl(p.githubUrl ?? "")
     setOpen(true)
   }
 
   async function saveProject(e: React.FormEvent) {
     e.preventDefault()
+    if (!user) return
     setSaving(true)
 
     try {
+      const batch = writeBatch(db)
+      const deadlineTs = deadline ? new Date(deadline) : null
+
       if (editing) {
-        await updateDoc(doc(db, "projects", editing.id), {
+        const ref = doc(db, "projects", editing.id)
+        batch.update(ref, {
           name,
           description,
+          ownerUid: ownerUid || null,
+          status,
+          deadline: deadlineTs,
+          githubUrl: githubUrl || null,
           updatedAt: serverTimestamp(),
         })
+        batchAudit(batch, {
+          actorUid: user.uid,
+          actorEmail: user.email ?? undefined,
+          action: "project.updated",
+          targetType: "project",
+          targetId: editing.id,
+          targetLabel: name,
+          metadata: { status, deadline, githubUrl },
+        })
       } else {
-        await addDoc(collection(db, "projects"), {
+        const ref = doc(collection(db, "projects"))
+        batch.set(ref, {
           name,
           description,
           members: [],
+          ownerUid: ownerUid || null,
+          status,
+          deadline: deadlineTs,
+          githubUrl: githubUrl || null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
+        batchAudit(batch, {
+          actorUid: user.uid,
+          actorEmail: user.email ?? undefined,
+          action: "project.created",
+          targetType: "project",
+          targetId: ref.id,
+          targetLabel: name,
+          metadata: { status },
+        })
       }
 
+      await batch.commit()
       setOpen(false)
     } finally {
       setSaving(false)
     }
   }
 
-  async function deleteProject(projectId: string) {
-    const ok = window.confirm("Delete this project?")
+  async function deleteProject(p: ProjectRow) {
+    if (!user) return
+    const ok = window.confirm(`Delete project "${p.name}"?`)
     if (!ok) return
 
-    await deleteDoc(doc(db, "projects", projectId))
+    const batch = writeBatch(db)
+    batch.delete(doc(db, "projects", p.id))
+    batchAudit(batch, {
+      actorUid: user.uid,
+      actorEmail: user.email ?? undefined,
+      action: "project.deleted",
+      targetType: "project",
+      targetId: p.id,
+      targetLabel: p.name,
+    })
+    await batch.commit()
   }
 
   return (
@@ -134,7 +209,7 @@ export default function AdminProjectsPage() {
                 Create Project
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>
                   {editing ? "Edit project" : "Create project"}
@@ -143,20 +218,61 @@ export default function AdminProjectsPage() {
               <form onSubmit={saveProject} className="flex flex-col gap-6">
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="name">Name</FieldLabel>
+                    <FieldLabel htmlFor="proj-name">Name</FieldLabel>
                     <Input
-                      id="name"
+                      id="proj-name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="description">Description</FieldLabel>
+                    <FieldLabel htmlFor="proj-desc">Description</FieldLabel>
                     <Textarea
-                      id="description"
+                      id="proj-desc"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="proj-owner">Owner UID</FieldLabel>
+                    <Input
+                      id="proj-owner"
+                      value={ownerUid}
+                      onChange={(e) => setOwnerUid(e.target.value)}
+                      placeholder="Firebase Auth UID"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="proj-status">Status</FieldLabel>
+                    <select
+                      id="proj-status"
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    >
+                      <option value="planned">Planned</option>
+                      <option value="active">Active</option>
+                      <option value="done">Done</option>
+                    </select>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="proj-deadline">Deadline</FieldLabel>
+                    <Input
+                      id="proj-deadline"
+                      type="date"
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="proj-github">GitHub URL</FieldLabel>
+                    <Input
+                      id="proj-github"
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/…"
                     />
                   </Field>
                 </FieldGroup>
@@ -180,26 +296,56 @@ export default function AdminProjectsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Members</TableHead>
+              <TableHead>Deadline</TableHead>
+              <TableHead>GitHub</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {projects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   No projects yet.
                 </TableCell>
               </TableRow>
             ) : (
               projects.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="max-w-[32rem] truncate text-muted-foreground">
-                    {p.description ?? ""}
+                  <TableCell>
+                    <div className="font-medium">{p.name}</div>
+                    {p.description && (
+                      <div className="max-w-[18rem] truncate text-xs text-muted-foreground">
+                        {p.description}
+                      </div>
+                    )}
                   </TableCell>
-                  <TableCell>{p.membersCount}</TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANT[p.status ?? "planned"]}>
+                      {STATUS_LABELS[p.status ?? "planned"]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{p.members.length}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {p.deadline
+                      ? new Date((p.deadline as any).toDate()).toLocaleDateString()
+                      : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {p.githubUrl ? (
+                      <a
+                        href={p.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm underline underline-offset-2"
+                      >
+                        Link
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-2">
                       <Button
@@ -214,7 +360,7 @@ export default function AdminProjectsPage() {
                         type="button"
                         variant="destructive"
                         size="sm"
-                        onClick={() => deleteProject(p.id)}
+                        onClick={() => deleteProject(p)}
                       >
                         Delete
                       </Button>

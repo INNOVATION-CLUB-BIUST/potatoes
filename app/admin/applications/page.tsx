@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { useAuth } from "@/components/AuthContext"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -20,6 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { db } from "@/lib/firebase"
+import { batchAudit } from "@/lib/audit"
+import type { ApplicationRow } from "@/lib/firestore-types"
 import {
   collection,
   doc,
@@ -28,22 +31,11 @@ import {
   orderBy,
   query,
   serverTimestamp,
-  updateDoc,
+  writeBatch,
 } from "firebase/firestore"
-
-type ApplicationRow = {
-  id: string
-  uid: string | null
-  fullName: string
-  email: string
-  status: string
-  why?: string
-  skills?: string
-}
 
 export default function AdminApplicationsPage() {
   const { user } = useAuth()
-
   const [apps, setApps] = React.useState<ApplicationRow[]>([])
   const [busyId, setBusyId] = React.useState<string | null>(null)
 
@@ -51,11 +43,10 @@ export default function AdminApplicationsPage() {
     const q = query(
       collection(db, "applications"),
       orderBy("createdAt", "desc"),
-      limit(50)
+      limit(100)
     )
-
     return onSnapshot(q, (snap) => {
-      const next = snap.docs.map((d) => {
+      const next: ApplicationRow[] = snap.docs.map((d) => {
         const data = d.data() as any
         return {
           id: d.id,
@@ -65,6 +56,7 @@ export default function AdminApplicationsPage() {
           status: data.status ?? "submitted",
           why: data.why,
           skills: data.skills,
+          createdAt: data.createdAt,
         }
       })
       setApps(next)
@@ -72,41 +64,70 @@ export default function AdminApplicationsPage() {
   }, [])
 
   async function approve(app: ApplicationRow) {
-    if (!app.uid) return
+    if (!app.uid || !user) return
     setBusyId(app.id)
     try {
-      await updateDoc(doc(db, "users", app.uid), {
+      const batch = writeBatch(db)
+      batch.update(doc(db, "users", app.uid), {
         role: "member",
         updatedAt: serverTimestamp(),
       })
-      await updateDoc(doc(db, "applications", app.id), {
+      batch.update(doc(db, "applications", app.id), {
         status: "approved",
         reviewedAt: serverTimestamp(),
-        reviewedBy: user?.uid ?? null,
+        reviewedBy: user.uid,
       })
+      batchAudit(batch, {
+        actorUid: user.uid,
+        actorEmail: user.email ?? undefined,
+        action: "application.approved",
+        targetType: "application",
+        targetId: app.id,
+        targetLabel: app.fullName,
+        metadata: { applicantUid: app.uid, applicantEmail: app.email },
+      })
+      await batch.commit()
     } finally {
       setBusyId(null)
     }
   }
 
   async function reject(app: ApplicationRow) {
+    if (!user) return
     setBusyId(app.id)
     try {
-      await updateDoc(doc(db, "applications", app.id), {
+      const batch = writeBatch(db)
+      batch.update(doc(db, "applications", app.id), {
         status: "rejected",
         reviewedAt: serverTimestamp(),
-        reviewedBy: user?.uid ?? null,
+        reviewedBy: user.uid,
       })
+      batchAudit(batch, {
+        actorUid: user.uid,
+        actorEmail: user.email ?? undefined,
+        action: "application.rejected",
+        targetType: "application",
+        targetId: app.id,
+        targetLabel: app.fullName,
+        metadata: { applicantUid: app.uid, applicantEmail: app.email },
+      })
+      await batch.commit()
     } finally {
       setBusyId(null)
     }
   }
 
+  const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    submitted: "outline",
+    approved: "default",
+    rejected: "destructive",
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Applications</CardTitle>
-        <CardDescription>Approve or reject membership applications.</CardDescription>
+        <CardTitle>Membership Applications</CardTitle>
+        <CardDescription>Approve or reject membership requests.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -114,14 +135,16 @@ export default function AdminApplicationsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Skills</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Submitted</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {apps.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   No applications yet.
                 </TableCell>
               </TableRow>
@@ -137,7 +160,19 @@ export default function AdminApplicationsPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{app.email}</TableCell>
-                  <TableCell>{app.status}</TableCell>
+                  <TableCell className="max-w-[12rem] truncate text-sm text-muted-foreground">
+                    {app.skills ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[app.status] ?? "outline"}>
+                      {app.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {app.createdAt
+                      ? new Date((app.createdAt as any).toDate()).toLocaleDateString()
+                      : "—"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-2">
                       <Button
@@ -146,9 +181,7 @@ export default function AdminApplicationsPage() {
                         disabled={!app.uid || busyId === app.id || app.status === "approved"}
                         onClick={() => approve(app)}
                       >
-                        {busyId === app.id && app.status !== "approved"
-                          ? "Working…"
-                          : "Approve"}
+                        {busyId === app.id ? "Working…" : "Approve"}
                       </Button>
                       <Button
                         type="button"
@@ -161,9 +194,7 @@ export default function AdminApplicationsPage() {
                       </Button>
                     </div>
                     {!app.uid && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        No uid (not registered)
-                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">No account linked</div>
                     )}
                   </TableCell>
                 </TableRow>

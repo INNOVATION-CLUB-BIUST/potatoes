@@ -17,10 +17,22 @@ export default function AdminLayout({
           <Separator className="my-3" />
           <nav className="flex flex-col gap-1">
             <Button asChild variant="ghost" className="justify-start">
+              <Link href="/admin">Dashboard</Link>
+            </Button>
+            <Button asChild variant="ghost" className="justify-start">
+              <Link href="/admin/users">Users</Link>
+            </Button>
+            <Button asChild variant="ghost" className="justify-start">
               <Link href="/admin/projects">Projects</Link>
             </Button>
             <Button asChild variant="ghost" className="justify-start">
               <Link href="/admin/applications">Applications</Link>
+            </Button>
+            <Button asChild variant="ghost" className="justify-start">
+              <Link href="/admin/announcements">Announcements</Link>
+            </Button>
+            <Button asChild variant="ghost" className="justify-start">
+              <Link href="/admin/reports">Reports</Link>
             </Button>
           </nav>
         </aside>

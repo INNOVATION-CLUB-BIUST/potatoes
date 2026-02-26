@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useAuth } from "@/components/AuthContext"
 import { Button } from "@/components/ui/button"
 import {
@@ -56,11 +57,14 @@ export default function ApplyPage() {
       <div className="mx-auto w-full max-w-xl p-4 md:p-6">
         <Card className="border-green-100 bg-green-50/30">
           <CardContent className="pt-6">
-            <div className="flex flex-col gap-2 text-center">
+            <div className="flex flex-col gap-3 text-center">
               <h3 className="font-semibold text-green-900">Application Sent!</h3>
               <p className="text-sm text-green-800/80">
                 Thanks for applying. An admin will review your details and update your role shortly.
               </p>
+              <Button asChild variant="outline" size="sm" className="mx-auto">
+                <Link href="/apply/status">Check my application status →</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -74,7 +78,10 @@ export default function ApplyPage() {
         <CardHeader>
           <CardTitle>Apply for membership</CardTitle>
           <CardDescription>
-            Fill out the details below to join our community.
+            Fill out the details below to join our community.{" "}
+            <Link href="/apply/status" className="underline underline-offset-2">
+              Already applied? Check status.
+            </Link>
           </CardDescription>
         </CardHeader>
         <CardContent>
