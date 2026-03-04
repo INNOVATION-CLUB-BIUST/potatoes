@@ -10,6 +10,13 @@ export type UserDoc = {
   name?: string
   bio?: string
   skills?: string
+  phoneNumber?: string
+  level?: string
+  course?: string
+  githubUsername?: string
+  /** true once user has submitted the application form */
+  applicationSubmitted?: boolean
+  applicationSubmittedAt?: Timestamp
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
@@ -44,6 +51,10 @@ export type ApplicationDoc = {
   email?: string
   why?: string
   skills?: string
+  level?: string
+  course?: string
+  phoneNumber?: string
+  githubUsername?: string
   status: ApplicationStatus
   reviewedAt?: Timestamp
   reviewedBy?: string | null

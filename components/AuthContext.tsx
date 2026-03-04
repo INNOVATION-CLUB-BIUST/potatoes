@@ -21,6 +21,12 @@ export type UserDoc = {
   name?: string
   bio?: string
   skills?: string
+  phoneNumber?: string
+  level?: string
+  course?: string
+  githubUsername?: string
+  applicationSubmitted?: boolean
+  applicationSubmittedAt?: unknown
   createdAt?: unknown
   updatedAt?: unknown
 }
@@ -88,6 +94,12 @@ export function AuthProvider({
           name: data.name,
           bio: data.bio,
           skills: data.skills,
+          phoneNumber: data.phoneNumber,
+          level: data.level,
+          course: data.course,
+          githubUsername: data.githubUsername,
+          applicationSubmitted: data.applicationSubmitted,
+          applicationSubmittedAt: data.applicationSubmittedAt,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
         }

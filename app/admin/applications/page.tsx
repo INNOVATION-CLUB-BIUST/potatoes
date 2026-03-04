@@ -5,6 +5,7 @@ import * as React from "react"
 import { useAuth } from "@/components/AuthContext"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Github } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/table"
 import { db } from "@/lib/firebase"
 import { batchAudit } from "@/lib/audit"
-import type { ApplicationRow } from "@/lib/firestore-types"
+import type { UserRow } from "@/lib/firestore-types"
 import {
   collection,
   doc,
@@ -31,60 +32,72 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
   writeBatch,
 } from "firebase/firestore"
 
+type PendingUser = UserRow & {
+  phoneNumber?: string
+  level?: string
+  course?: string
+  githubUsername?: string
+  bio?: string
+  applicationSubmittedAt?: any
+}
+
 export default function AdminApplicationsPage() {
   const { user } = useAuth()
-  const [apps, setApps] = React.useState<ApplicationRow[]>([])
+  const [apps, setApps] = React.useState<PendingUser[]>([])
   const [busyId, setBusyId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const q = query(
-      collection(db, "applications"),
-      orderBy("createdAt", "desc"),
+      collection(db, "users"),
+      where("role", "==", "pending"),
+      where("applicationSubmitted", "==", true),
+      orderBy("applicationSubmittedAt", "desc"),
       limit(100)
     )
     return onSnapshot(q, (snap) => {
-      const next: ApplicationRow[] = snap.docs.map((d) => {
+      const next: PendingUser[] = snap.docs.map((d) => {
         const data = d.data() as any
         return {
           id: d.id,
-          uid: data.uid ?? null,
-          fullName: data.fullName ?? "",
           email: data.email ?? "",
-          status: data.status ?? "submitted",
-          why: data.why,
+          role: data.role ?? "pending",
+          name: data.name ?? "",
+          bio: data.bio,
           skills: data.skills,
+          phoneNumber: data.phoneNumber,
+          level: data.level,
+          course: data.course,
+          githubUsername: data.githubUsername,
+          applicationSubmittedAt: data.applicationSubmittedAt,
           createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         }
       })
       setApps(next)
     })
   }, [])
 
-  async function approve(app: ApplicationRow) {
-    if (!app.uid || !user) return
-    setBusyId(app.id)
+  async function approve(applicant: PendingUser) {
+    if (!user) return
+    setBusyId(applicant.id)
     try {
       const batch = writeBatch(db)
-      batch.update(doc(db, "users", app.uid), {
+      batch.update(doc(db, "users", applicant.id), {
         role: "member",
         updatedAt: serverTimestamp(),
-      })
-      batch.update(doc(db, "applications", app.id), {
-        status: "approved",
-        reviewedAt: serverTimestamp(),
-        reviewedBy: user.uid,
       })
       batchAudit(batch, {
         actorUid: user.uid,
         actorEmail: user.email ?? undefined,
         action: "application.approved",
-        targetType: "application",
-        targetId: app.id,
-        targetLabel: app.fullName,
-        metadata: { applicantUid: app.uid, applicantEmail: app.email },
+        targetType: "user",
+        targetId: applicant.id,
+        targetLabel: applicant.name ?? applicant.email ?? applicant.id,
+        metadata: { applicantEmail: applicant.email },
       })
       await batch.commit()
     } finally {
@@ -92,51 +105,44 @@ export default function AdminApplicationsPage() {
     }
   }
 
-  async function reject(app: ApplicationRow) {
+  async function reject(applicant: PendingUser) {
     if (!user) return
-    setBusyId(app.id)
+    setBusyId(applicant.id)
     try {
       const batch = writeBatch(db)
-      batch.update(doc(db, "applications", app.id), {
-        status: "rejected",
-        reviewedAt: serverTimestamp(),
-        reviewedBy: user.uid,
+      batch.update(doc(db, "users", applicant.id), {
+        applicationRejected: true,
+        applicationRejectedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       })
       batchAudit(batch, {
         actorUid: user.uid,
         actorEmail: user.email ?? undefined,
         action: "application.rejected",
-        targetType: "application",
-        targetId: app.id,
-        targetLabel: app.fullName,
-        metadata: { applicantUid: app.uid, applicantEmail: app.email },
+        targetType: "user",
+        targetId: applicant.id,
+        targetLabel: applicant.name ?? applicant.email ?? applicant.id,
+        metadata: { applicantEmail: applicant.email },
       })
       await batch.commit()
     } finally {
       setBusyId(null)
     }
-  }
-
-  const statusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-    submitted: "outline",
-    approved: "default",
-    rejected: "destructive",
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Membership Applications</CardTitle>
-        <CardDescription>Approve or reject membership requests.</CardDescription>
+        <CardDescription>Approve or reject pending membership requests. Only users who have submitted the application form appear here.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Skills</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Applicant</TableHead>
+              <TableHead>Education</TableHead>
+              <TableHead>Contact</TableHead>
               <TableHead>Submitted</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -144,33 +150,38 @@ export default function AdminApplicationsPage() {
           <TableBody>
             {apps.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground">
-                  No applications yet.
+                <TableCell colSpan={5} className="text-muted-foreground">
+                  No pending applications.
                 </TableCell>
               </TableRow>
             ) : (
-              apps.map((app) => (
-                <TableRow key={app.id}>
+              apps.map((a) => (
+                <TableRow key={a.id}>
                   <TableCell>
-                    <div className="font-medium">{app.fullName}</div>
-                    {app.why && (
-                      <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {app.why}
+                    <div className="font-medium">{a.name || a.email}</div>
+                    <div className="text-xs text-muted-foreground line-clamp-1">{a.skills ?? "No expertise listed"}</div>
+                    {a.bio && (
+                      <div className="mt-1 line-clamp-2 text-[10px] text-muted-foreground italic border-l-2 border-slate-100 pl-2">
+                        &quot;{a.bio}&quot;
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{app.email}</TableCell>
-                  <TableCell className="max-w-[12rem] truncate text-sm text-muted-foreground">
-                    {app.skills ?? "—"}
+                  <TableCell>
+                    <div className="text-sm font-bold">{a.level ?? "—"}</div>
+                    <div className="text-[11px] text-muted-foreground line-clamp-1">{a.course ?? "—"}</div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[app.status] ?? "outline"}>
-                      {app.status}
-                    </Badge>
+                    <div className="text-sm font-medium">{a.email}</div>
+                    <div className="text-xs text-muted-foreground leading-none mb-1">{a.phoneNumber ?? "—"}</div>
+                    {a.githubUsername && (
+                       <div className="flex items-center gap-1 text-[11px] text-sky-600 font-mono">
+                         <Github className="w-2.5 h-2.5" /> {a.githubUsername}
+                       </div>
+                    )}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {app.createdAt
-                      ? new Date((app.createdAt as any).toDate()).toLocaleDateString()
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {a.applicationSubmittedAt
+                      ? new Date((a.applicationSubmittedAt as any).toDate()).toLocaleDateString()
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -178,24 +189,21 @@ export default function AdminApplicationsPage() {
                       <Button
                         type="button"
                         size="sm"
-                        disabled={!app.uid || busyId === app.id || app.status === "approved"}
-                        onClick={() => approve(app)}
+                        disabled={busyId === a.id}
+                        onClick={() => approve(a)}
                       >
-                        {busyId === app.id ? "Working…" : "Approve"}
+                        {busyId === a.id ? "Working…" : "Approve"}
                       </Button>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={busyId === app.id || app.status === "rejected"}
-                        onClick={() => reject(app)}
+                        disabled={busyId === a.id}
+                        onClick={() => reject(a)}
                       >
                         Reject
                       </Button>
                     </div>
-                    {!app.uid && (
-                      <div className="mt-1 text-xs text-muted-foreground">No account linked</div>
-                    )}
                   </TableCell>
                 </TableRow>
               ))
