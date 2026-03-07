@@ -18,7 +18,7 @@ const executives = [
   {
     role: "HR Manager",
     name: "Lumbiel A",
-    image: "/club-members/3.png",
+    image: "/club-members/lum.png",
   },
   {
     role: "Treasurer",
@@ -27,8 +27,8 @@ const executives = [
   },
   {
     role: "Secretary",
-    name: "Simoen Uden",
-    image: "/club-members/s.jpeg",
+    name: "Simeon Uden",
+    image: "/club-members/oga.webp",
   },
 ]
 

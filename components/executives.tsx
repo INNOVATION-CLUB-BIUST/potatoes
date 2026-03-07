@@ -7,9 +7,9 @@ import { motion } from 'framer-motion';
 const leaders = [
   { role: 'President', name: 'Phemelo Mokgosi', image: '/club-members/p.webp', quote: 'Pioneering the next wave of tech in BW.' },
   { role: 'Vice President', name: 'Desiree Chingwaru', image: '/club-members/2.webp' },
-  { role: 'HR Manager', name: 'Lumbiel A', image: '/club-members/3.webp' },
-  { role: 'Treasurer', name: 'Thandiswa okuntle', image: '/club-members/l.webp' },
-  { role: 'Secretary', name: 'Simoen Uden', image: '/club-members/s.webp' },
+  { role: 'HR Manager', name: 'Lumbiel A', image: '/club-members/lum.webp' },
+  { role: 'Treasurer', name: 'Simeon Uden', image: '/club-members/oga.webp' },
+  { role: 'Secretary', name: 'Thandiswa ', image: '/club-members/s.webp' },
 ];
 
 export const Executives = () => (

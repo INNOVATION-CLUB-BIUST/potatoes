@@ -1,5 +1,5 @@
 'use client'
-import { motion, MotionValue } from "motion/react";
+import { motion, MotionValue, Transition } from "motion/react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Cpu, Rocket, Sparkles, Terminal } from "lucide-react"; // Adding icons for "life"
@@ -36,13 +36,13 @@ export default function HeroSection({
   const floatingAnimation = {
     initial: { y: 0 },
     animate: {
-      y: [0, -20, 0],
-      transition: {
-        duration: 4,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
+      y: [0, -20, 0]
+    },
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    } as Transition
   };
 
   return (
@@ -55,18 +55,18 @@ export default function HeroSection({
           className="absolute inset-0 pointer-events-none z-10"
         >
           {/* Top Left Item */}
-          <motion.div {...floatingAnimation} className="absolute top-[15%] left-[10%] text-white/20 flex items-center gap-2">
+          <motion.div initial={floatingAnimation.initial} animate={floatingAnimation.animate} transition={floatingAnimation.transition} className="absolute top-[15%] left-[10%] text-white/20 flex items-center gap-2">
             <Terminal size={40} />
             <span className="font-mono text-sm tracking-widest uppercase">Build.exe</span>
           </motion.div>
 
           {/* Top Right Item */}
-          <motion.div {...floatingAnimation} transition={{ delay: 1 }} className="absolute top-[20%] right-[15%] text-white/20">
+          <motion.div initial={floatingAnimation.initial} animate={floatingAnimation.animate} transition={{ ...floatingAnimation.transition, delay: 1 }} className="absolute top-[20%] right-[15%] text-white/20">
             <Cpu size={60} strokeWidth={1} />
           </motion.div>
 
           {/* Bottom Right Item */}
-          <motion.div {...floatingAnimation} transition={{ delay: 0.5 }} className="absolute bottom-[20%] right-[10%] flex flex-col items-end opacity-40">
+          <motion.div initial={floatingAnimation.initial} animate={floatingAnimation.animate} transition={{ ...floatingAnimation.transition, delay: 0.5 }} className="absolute bottom-[20%] right-[10%] flex flex-col items-end opacity-40">
             <Sparkles className="text-yellow-400 mb-2" />
             <p className="text-white text-xs font-pixel uppercase tracking-widest">Future Ready</p>
           </motion.div>

@@ -2,7 +2,7 @@
 
 import EmailSender from "@/lib/EmailSender";
 
-export async function sendApplicationEmail(email, name) {
+export async function sendApplicationEmail(email: string, name?: string) {
   try {
     await EmailSender.send({
       type: "applicationReceived",
@@ -10,13 +10,13 @@ export async function sendApplicationEmail(email, name) {
       data: { name: name || "Applicant" },
     });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to send application email:", error);
     return { success: false, error: error.message };
   }
 }
 
-export async function sendApprovalEmail(email, name) {
+export async function sendApprovalEmail(email: string, name?: string) {
   try {
     await EmailSender.send({
       type: "accepted",
@@ -24,13 +24,13 @@ export async function sendApprovalEmail(email, name) {
       data: { name: name || "Member" },
     });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to send approval email:", error);
     return { success: false, error: error.message };
   }
 }
 
-export async function sendRejectionEmail(email, name) {
+export async function sendRejectionEmail(email: string, name?: string) {
   try {
     await EmailSender.send({
       type: "rejected",
@@ -38,7 +38,7 @@ export async function sendRejectionEmail(email, name) {
       data: { name: name || "User" },
     });
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to send rejection email:", error);
     return { success: false, error: error.message };
   }

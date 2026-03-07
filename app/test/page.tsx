@@ -608,7 +608,7 @@ export default function Portfolio() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <span className="text-5xl md:text-6xl font-medium">+320</span>
+              <span className="text-5xl md:text-6xl font-medium font-pixel-grid">+3120</span>
               <p className="text-gray-500 mt-3 text-lg">Projects completed for global clients across various industries.</p>
             </motion.div>
             <motion.div
