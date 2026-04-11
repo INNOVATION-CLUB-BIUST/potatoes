@@ -5,9 +5,9 @@ import { ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const leaders = [
-  { role: 'President', name: 'Phemelo Mokgosi', image: '/club-members/p.webp', quote: 'Pioneering the next wave of tech in BW.' },
+  { role: 'President', name: 'Phemelo Moloi', image: '/club-members/p.webp', quote: 'Pioneering the next wave of tech in BW.' },
   { role: 'Vice President', name: 'Desiree Chingwaru', image: '/club-members/desiree.webp' },
-  { role: 'HR Manager', name: 'Lumbiel A', image: '/club-members/lum.webp' },
+  { role: 'HR Manager', name: 'Lumbiel Timothy', image: '/club-members/lum.webp' },
   { role: 'Treasurer', name: 'Simeon Uden', image: '/club-members/oga.webp' },
   { role: 'Secretary', name: 'Thandiswa ', image: '/club-members/s.webp' },
 ];

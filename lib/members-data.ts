@@ -12,7 +12,7 @@ export const executives = [
   },
   {
     role: "HR Manager",
-    name: "Lumbiel A",
+    name: "Lumbiel Timothy",
     image: "/club-members/lum.webp",
   },
   {
