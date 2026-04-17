@@ -123,15 +123,7 @@ export const ProjectsSection = () => (
       transition={{ delay: 0.3 }}
       className="mt-32 flex justify-center"
     >
-      <Link
-        href="/demo"
-        className="group relative px-10 py-5 bg-black text-white rounded-full flex items-center gap-4 transition-all hover:pr-12"
-      >
-        <span className="text-sm font-bold uppercase tracking-[0.2em]">View All Projects</span>
-        <div className="absolute right-5 group-hover:right-7 transition-all">
-          <Plus size={20} />
-        </div>
-      </Link>
+    
     </motion.div>
   </section>
 );
