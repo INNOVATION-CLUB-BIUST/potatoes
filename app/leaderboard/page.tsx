@@ -315,85 +315,87 @@ export default function LeaderboardPage() {
             )}
           </div>
 
-          {/* ── Join Form ───────────────────────────────────────────────────── */}
-          <div className="mb-6 rounded-xl border-2 border-[#1c1c1c] bg-white/90 shadow-[4px_4px_0px_0px_#1c1c1c] p-5">
-            <h2 className="text-sm font-bold text-slate-900 mb-3">Add yourself to the leaderboard</h2>
-            <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                placeholder="GitHub username"
-                value={joinUsername}
-                onChange={(e) => setJoinUsername(e.target.value)}
-                required
-                className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
-              />
-              <input
-                type="text"
-                placeholder="Display name"
-                value={joinName}
-                onChange={(e) => setJoinName(e.target.value)}
-                required
-                className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={joining}
-                className="shrink-0 rounded-lg border-2 border-[#1c1c1c] bg-[#fbd35a] px-5 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#1c1c1c] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {joining ? "Adding…" : "Add me"}
-              </button>
-            </form>
-            {joinStatus && (
-              <p className={`mt-2 text-xs font-medium ${joinStatus.ok ? "text-green-700" : "text-red-600"}`}>
-                {joinStatus.msg}
-              </p>
-            )}
-          </div>
+          <div className="mb-10 grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+            {/* ── Join Form ─────────────────────────────────────────────────── */}
+            <div className="rounded-xl border-2 border-[#1c1c1c] bg-white/90 shadow-[4px_4px_0px_0px_#1c1c1c] p-5">
+              <h2 className="text-sm font-bold text-slate-900 mb-3">Add yourself to the leaderboard</h2>
+              <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="GitHub username"
+                  value={joinUsername}
+                  onChange={(e) => setJoinUsername(e.target.value)}
+                  required
+                  className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
+                />
+                <input
+                  type="text"
+                  placeholder="Display name"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  required
+                  className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={joining}
+                  className="shrink-0 rounded-lg border-2 border-[#1c1c1c] bg-[#fbd35a] px-5 py-2 text-sm font-bold shadow-[2px_2px_0px_0px_#1c1c1c] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {joining ? "Adding…" : "Add me"}
+                </button>
+              </form>
+              {joinStatus && (
+                <p className={`mt-2 text-xs font-medium ${joinStatus.ok ? "text-green-700" : "text-red-600"}`}>
+                  {joinStatus.msg}
+                </p>
+              )}
+            </div>
 
-            {/* ── Private Contributions Opt-in ───────────────────────────────── */}
-            <div className="mb-10 rounded-xl border-2 border-[#1c1c1c] bg-white/90 shadow-[4px_4px_0px_0px_#1c1c1c] p-5">
+            {/* ── Private Contributions Opt-in ─────────────────────────────── */}
+            <div className="rounded-xl border-2 border-[#1c1c1c] bg-white/90 shadow-[4px_4px_0px_0px_#1c1c1c] p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-lg bg-[#fbd35a] border-2 border-[#1c1c1c] flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-[#1c1c1c]" />
+                <div className="w-6 h-6 rounded-md bg-[#fbd35a] border-2 border-[#1c1c1c] flex items-center justify-center">
+                  <Lock className="w-3.5 h-3.5 text-[#1c1c1c]" />
                 </div>
-                <h2 className="text-sm font-bold text-slate-900">Private contributions (opt-in)</h2>
+                <h2 className="text-xs font-bold text-slate-900">Private contributions</h2>
               </div>
-              <p className="text-xs text-slate-600 mb-3">
-                Connect your GitHub account to include private commits, PRs, and issues in your score.
+              <p className="text-[11px] text-slate-600 mb-3">
+                Opt in to include private commits, PRs, and issues.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-2">
                 <input
                   type="text"
                   placeholder="GitHub username"
                   value={privateUsername}
                   onChange={(e) => setPrivateUsername(e.target.value)}
-                  className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
+                  className="rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-xs outline-none focus:border-[#fbd35a] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={handlePrivateConnect}
                   disabled={privateLoading}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[#1c1c1c] bg-[#1c1c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c2c2c] transition-colors disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[#1c1c1c] bg-[#1c1c1c] px-3 py-2 text-[11px] font-semibold text-white hover:bg-[#2c2c2c] transition-colors disabled:opacity-60"
                 >
                   {privateLoading ? "Connecting..." : privateConnected ? "Reconnect GitHub" : "Connect GitHub"}
                 </button>
               </div>
 
-              <div className="mt-3 text-xs">
+              <div className="mt-2 text-[11px]">
                 {privateConnected ? (
-                  <span className="text-emerald-700">Connected. Private contributions are included.</span>
+                  <span className="text-emerald-700">Connected.</span>
                 ) : (
                   <span className="text-slate-500">Not connected yet.</span>
                 )}
               </div>
 
               {privateStatus && (
-                <p className={`mt-2 text-xs ${privateStatus.ok ? "text-emerald-700" : "text-red-600"}`}>
+                <p className={`mt-2 text-[11px] ${privateStatus.ok ? "text-emerald-700" : "text-red-600"}`}>
                   {privateStatus.msg}
                 </p>
               )}
             </div>
+          </div>
 
           {/* ── Top 3 Podium ────────────────────────────────────────────────── */}
           {data && data.results.length >= 3 && (
