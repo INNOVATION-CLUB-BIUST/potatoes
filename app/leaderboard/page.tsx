@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { Trophy, Github, RefreshCw, AlertCircle } from "lucide-react"
+import { Trophy, Github, RefreshCw, AlertCircle, Lock } from "lucide-react"
 import type { LeaderboardResponse, LeaderboardEntry } from "@/app/api/leaderboard/route"
+import { useAuth } from "@/components/AuthContext"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ function GitHubAvatar({
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LeaderboardPage() {
+  const { user, userDoc } = useAuth()
   const [data, setData] = React.useState<LeaderboardResponse | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -75,6 +77,11 @@ export default function LeaderboardPage() {
   const [joinName, setJoinName] = React.useState("")
   const [joinStatus, setJoinStatus] = React.useState<{ ok: boolean; msg: string } | null>(null)
   const [joining, setJoining] = React.useState(false)
+
+  const [privateUsername, setPrivateUsername] = React.useState("")
+  const [privateStatus, setPrivateStatus] = React.useState<{ ok: boolean; msg: string } | null>(null)
+  const [privateConnected, setPrivateConnected] = React.useState(false)
+  const [privateLoading, setPrivateLoading] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
@@ -87,6 +94,48 @@ export default function LeaderboardPage() {
       .catch(() => setError("Failed to load leaderboard data."))
       .finally(() => setLoading(false))
   }, [])
+
+  React.useEffect(() => {
+    if (userDoc?.githubUsername && !privateUsername) {
+      setPrivateUsername(userDoc.githubUsername)
+    }
+  }, [userDoc, privateUsername])
+
+  React.useEffect(() => {
+    let cancelled = false
+
+    async function loadStatus() {
+      if (!user) {
+        setPrivateConnected(false)
+        setPrivateStatus(null)
+        return
+      }
+
+      try {
+        const idToken = await user.getIdToken()
+        const res = await fetch("/api/github/oauth/status", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        })
+        const json = await res.json()
+        if (cancelled) return
+        if (res.ok) {
+          setPrivateConnected(Boolean(json.connected))
+          if (json.githubUsername && !privateUsername) {
+            setPrivateUsername(json.githubUsername)
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err)
+        }
+      }
+    }
+
+    loadStatus()
+    return () => {
+      cancelled = true
+    }
+  }, [user, privateUsername])
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
@@ -110,6 +159,50 @@ export default function LeaderboardPage() {
       setJoinStatus({ ok: false, msg: "Network error. Please try again." })
     } finally {
       setJoining(false)
+    }
+  }
+
+  async function handlePrivateConnect() {
+    if (!user) {
+      setPrivateStatus({ ok: false, msg: "Please sign in to connect GitHub." })
+      return
+    }
+
+    if (!privateUsername.trim()) {
+      setPrivateStatus({ ok: false, msg: "Enter your GitHub username first." })
+      return
+    }
+
+    setPrivateLoading(true)
+    setPrivateStatus(null)
+    try {
+      const idToken = await user.getIdToken()
+      const res = await fetch("/api/github/oauth/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          githubUsername: privateUsername.trim(),
+          returnTo: "/leaderboard",
+        }),
+      })
+
+      const json = await res.json()
+      if (!res.ok) {
+        setPrivateStatus({ ok: false, msg: json.error ?? "Unable to start GitHub OAuth." })
+        return
+      }
+
+      if (json.url) {
+        window.location.href = json.url
+      }
+    } catch (err) {
+      console.error(err)
+      setPrivateStatus({ ok: false, msg: "Network error. Please try again." })
+    } finally {
+      setPrivateLoading(false)
     }
   }
 
@@ -256,6 +349,51 @@ export default function LeaderboardPage() {
               </p>
             )}
           </div>
+
+            {/* ── Private Contributions Opt-in ───────────────────────────────── */}
+            <div className="mb-10 rounded-xl border-2 border-[#1c1c1c] bg-white/90 shadow-[4px_4px_0px_0px_#1c1c1c] p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-[#fbd35a] border-2 border-[#1c1c1c] flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-[#1c1c1c]" />
+                </div>
+                <h2 className="text-sm font-bold text-slate-900">Private contributions (opt-in)</h2>
+              </div>
+              <p className="text-xs text-slate-600 mb-3">
+                Connect your GitHub account to include private commits, PRs, and issues in your score.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="GitHub username"
+                  value={privateUsername}
+                  onChange={(e) => setPrivateUsername(e.target.value)}
+                  className="flex-1 rounded-lg border-2 border-[#1c1c1c] px-3 py-2 text-sm outline-none focus:border-[#fbd35a] transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={handlePrivateConnect}
+                  disabled={privateLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[#1c1c1c] bg-[#1c1c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c2c2c] transition-colors disabled:opacity-60"
+                >
+                  {privateLoading ? "Connecting..." : privateConnected ? "Reconnect GitHub" : "Connect GitHub"}
+                </button>
+              </div>
+
+              <div className="mt-3 text-xs">
+                {privateConnected ? (
+                  <span className="text-emerald-700">Connected. Private contributions are included.</span>
+                ) : (
+                  <span className="text-slate-500">Not connected yet.</span>
+                )}
+              </div>
+
+              {privateStatus && (
+                <p className={`mt-2 text-xs ${privateStatus.ok ? "text-emerald-700" : "text-red-600"}`}>
+                  {privateStatus.msg}
+                </p>
+              )}
+            </div>
 
           {/* ── Top 3 Podium ────────────────────────────────────────────────── */}
           {data && data.results.length >= 3 && (
