@@ -25,6 +25,7 @@ export type UserDoc = {
   level?: string
   course?: string
   githubUsername?: string
+  leaderboardPrivateOptIn?: boolean
   applicationSubmitted?: boolean
   applicationSubmittedAt?: unknown
   createdAt?: unknown
@@ -98,6 +99,7 @@ export function AuthProvider({
           level: data.level,
           course: data.course,
           githubUsername: data.githubUsername,
+          leaderboardPrivateOptIn: data.leaderboardPrivateOptIn,
           applicationSubmitted: data.applicationSubmitted,
           applicationSubmittedAt: data.applicationSubmittedAt,
           createdAt: data.createdAt,

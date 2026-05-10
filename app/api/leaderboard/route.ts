@@ -1,15 +1,18 @@
 import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/db"
+import { adminDb } from "@/lib/firebase-admin"
+import { decryptSecret } from "@/lib/crypto"
 import { LEADERBOARD_USERS } from "@/lib/leaderboard-users"
 
 export const revalidate = 3600 // 1 hour
+export const runtime = "nodejs"
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql"
 
 const CONTRIBUTIONS_QUERY = `
-  query Contributions($login: String!, $from: DateTime!, $to: DateTime!) {
+  query Contributions($login: String!, $from: DateTime!, $to: DateTime!, $includePrivate: Boolean!) {
     user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
+      contributionsCollection(from: $from, to: $to, includePrivateContributions: $includePrivate) {
         totalCommitContributions
         totalPullRequestContributions
         totalIssueContributions
@@ -34,6 +37,13 @@ export interface LeaderboardResponse {
   window: { from: string; to: string }
   generatedAt: string
   results: LeaderboardEntry[]
+}
+
+type PrivateToken = {
+  githubUsername: string
+  tokenEnc: string
+  tokenIv: string
+  tokenTag: string
 }
 
 export async function GET(): Promise<Response> {
@@ -65,19 +75,46 @@ export async function GET(): Promise<Response> {
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
   const to = now.toISOString()
 
+  // ── Load any opted-in private tokens ─────────────────────────────────────
+  const tokenSnapshot = await adminDb.collection("leaderboard_private_tokens").get()
+  const tokenMap = new Map<string, PrivateToken>()
+  tokenSnapshot.forEach((docSnap) => {
+    const data = docSnap.data() as PrivateToken
+    if (data?.githubUsername && data?.tokenEnc && data?.tokenIv && data?.tokenTag) {
+      tokenMap.set(data.githubUsername.toLowerCase(), data)
+    }
+  })
+
   // ── Fetch contributions for every member in parallel ──────────────────────
   const results = await Promise.all(
     allUsers.map(async ({ username, name }): Promise<LeaderboardEntry> => {
+      const privateToken = tokenMap.get(username.toLowerCase())
+      let accessToken = token
+      let includePrivate = false
+
+      if (privateToken) {
+        try {
+          accessToken = decryptSecret({
+            cipherText: privateToken.tokenEnc,
+            iv: privateToken.tokenIv,
+            tag: privateToken.tokenTag,
+          })
+          includePrivate = true
+        } catch (error) {
+          console.warn(`Failed to decrypt token for ${username}:`, error)
+        }
+      }
+
       try {
         const res = await fetch(GITHUB_GRAPHQL, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             query: CONTRIBUTIONS_QUERY,
-            variables: { login: username, from, to },
+            variables: { login: username, from, to, includePrivate },
           }),
           next: { revalidate: 3600 },
         })

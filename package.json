@@ -15,6 +15,7 @@
     "clsx": "^2.1.1",
     "facehash": "^0.1.0",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.5.0",
     "framer-motion": "^12.34.3",
     "geist": "^1.7.0",
     "html-to-image": "^1.11.13",

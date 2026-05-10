@@ -42,6 +42,22 @@ The club features a public GitHub contributions leaderboard at `/leaderboard` th
    GITHUB_TOKEN=ghp_your_token_here
    ```
 
+      For private contribution opt-in via GitHub OAuth, add:
+
+      ```env
+      GITHUB_OAUTH_CLIENT_ID=your_client_id
+      GITHUB_OAUTH_CLIENT_SECRET=your_client_secret
+      GITHUB_OAUTH_REDIRECT_URI=http://localhost:3000/api/github/oauth/callback
+
+      # 32 bytes, base64-encoded. Example generation:
+      # openssl rand -base64 32
+      LEADERBOARD_TOKEN_SECRET=base64_secret_here
+
+      # Firebase Admin SDK credentials
+     FIREBASE_ADMIN_CLIENT_EMAIL=your_client_email
+      FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+      ```
+
    The token only needs **no extra scopes** (public data is accessible with a standard token). Generate one at [github.com/settings/tokens](https://github.com/settings/tokens).
 
 2. **Add club members** to [`lib/leaderboard-users.ts`](lib/leaderboard-users.ts):
